@@ -107,8 +107,23 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     """
     # BEGIN ASSIGN2_1
     # TODO
-    
-    raise NotImplementedError("Task Autodiff Not Implemented Yet")
+    visited = set()
+    order = list()
+    def dfs(node:Variable) ->None:
+        if node.is_constant() or node.unique_id in visited :
+            return
+        
+       
+        for parent in node.parents:
+            dfs(parent)
+        
+        visited.add(node.unique_id)
+        order.append(node) 
+
+    dfs(variable)
+    order.reverse()
+
+    return order
     # END ASSIGN2_1
 
 
@@ -129,9 +144,30 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
         3. Otherwise, the derivative should be propagated via chain rule
     """
     # BEGIN ASSIGN2_1
+
     # TODO
+    def add_outgrad(prev_g, g):
+        if prev_g is None:
+            return g
+        return prev_g + g
+    
+    outgrad = {variable.unique_id : deriv}
+
+    for node in topological_sort(variable):
+
+        cur_grad = outgrad[node.unique_id]
+        
+        if node.is_leaf():
+            node.accumulate_derivative(outgrad.get(node.unique_id))
+        else:
+            for parent, parent_grad in node.chain_rule(cur_grad):
+                outgrad[parent.unique_id] = add_outgrad(outgrad.get(parent.unique_id), parent_grad)
+
+
+            
+        
+
    
-    raise NotImplementedError("Task Autodiff Not Implemented Yet")
     # END ASSIGN2_1
 
 
