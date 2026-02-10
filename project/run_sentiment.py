@@ -53,9 +53,9 @@ class Linear(minitorch.Module):
         # 2. Initialize self.bias to be a random parameter of (out_size)
         # 3. Set self.out_size to be out_size
         # HINT: make sure to use the RParam function
-    
-        raise NotImplementedError("Linear not implemented")
-    
+        self.weights = RParam(in_size, out_size)
+        self.bias = RParam(out_size)
+        self.out_size = out_size
         # END ASSIGN2_2
 
     def forward(self, x):
@@ -69,9 +69,12 @@ class Linear(minitorch.Module):
         # 3. Apply Matrix Multiplication on input x and self.weights, and reshape the output to be of size (batch, self.out_size)
         # 4. Add self.bias
         # HINT: You can use the view function of minitorch.tensor for reshape
-
-        raise NotImplementedError("Linear forward not implemented")
-    
+        x = x.contiguous().view(batch, in_size)
+        w = self.weights.value.contiguous().view(in_size, self.out_size)
+        x = minitorch.tensor_functions.MatMul.apply(x, w)
+        b = self.bias.value.contiguous().view(self.out_size)
+        x = minitorch.tensor_functions.Add.apply(x, b)
+        return x
         # END ASSIGN2_2
         
         
@@ -98,14 +101,15 @@ class Network(minitorch.Module):
         
         self.embedding_dim = embedding_dim
         self.dropout_prob = dropout_prob
+        self.hidden_dim = hidden_dim
                 
         # BEGIN ASSIGN2_2
         # TODO
         # 1. Construct two linear layers: the first one is embedding_dim * hidden_dim
         #       the second one is hidden_dim * 1
 
-        raise NotImplementedError("Network not implemented")
-        
+        self.l1 = Linear(self.embedding_dim, self.hidden_dim)
+        self.l2 = Linear(self.hidden_dim, 1)   
         # END ASSIGN2_2
         
         
@@ -114,7 +118,7 @@ class Network(minitorch.Module):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
-    
+        batch, _, _ = embeddings.shape
         # BEGIN ASSIGN2_2
         # TODO
         # 1. Average the embeddings on the sentence length dimension to obtain a tensor of (batch, embedding_dim)
@@ -123,9 +127,14 @@ class Network(minitorch.Module):
         # 4. Apply the second linear layer
         # 5. Apply sigmoid and reshape to (batch)
         # HINT: You can use minitorch.nn.dropout for dropout, and minitorch.tensor.relu for ReLU
-        
-        raise NotImplementedError("Network forward not implemented")
-    
+        x = embeddings.mean(dim=1)
+        x = x.view(batch, self.embedding_dim)
+        x = self.l1(x)
+        x = x.relu()
+        x = minitorch.nn.dropout(x, self.dropout_prob)
+        x = self.l2(x)
+        x = x.view(batch)
+        return x
         # END ASSIGN2_2
 
 
