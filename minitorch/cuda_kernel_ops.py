@@ -21,15 +21,17 @@ import numpy as np
 import os
 import pycuda.autoinit
 import pycuda.driver as cuda
-
+import platform
 # Load the shared library
 lib = None
+# Load the shared library
 try:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    lib_path = os.path.join(current_dir, "cuda_kernels", "combine.so")
-    lib = ctypes.CDLL(lib_path)
-except Exception as e:
-    print(f"cuda kernels not implemented: combine.so not found ({e})")
+    if platform.system() == "Windows":
+        lib = ctypes.CDLL("minitorch/cuda_kernels/combine.dll")
+    else:
+        lib = ctypes.CDLL("minitorch/cuda_kernels/combine.so")
+except:
+    print("cuda kernels not implemented: combine.dll/.so not found")
 
 datatype = np.float32
 
