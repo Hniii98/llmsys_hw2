@@ -25,13 +25,19 @@ import platform
 # Load the shared library
 lib = None
 # Load the shared library
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+dll_path = os.path.join(current_dir, "cuda_kernels", "combine.dll")
+
 try:
     if platform.system() == "Windows":
-        lib = ctypes.CDLL("minitorch/cuda_kernels/combine.dll")
+        lib = ctypes.CDLL(dll_path)
     else:
-        lib = ctypes.CDLL("minitorch/cuda_kernels/combine.so")
-except:
-    print("cuda kernels not implemented: combine.dll/.so not found")
+        lib = ctypes.CDLL(os.path.join(current_dir, "cuda_kernels", "combine.so"))
+except Exception as e:
+    print(f"cuda kernels not implemented: {e}")
+
 
 datatype = np.float32
 
