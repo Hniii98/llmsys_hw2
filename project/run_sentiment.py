@@ -31,15 +31,27 @@ def binary_cross_entropy_loss(out, y):
     out: output of the neural network, already normalized as we apply sigmoid as last layer (batch_size,)
     y: true labels [0, 1] (batch_size,)
     """
-
+    batch = out.shape[0]
     # BEGIN ASSIGN2_3
     # TODO
     # 1. Create ones tensor with same shape as y
     # 2. Compute log softmax of out and (ones - out)
     # 3. Calculate binary cross entropy and take mean
     # HINT: Use minitorch.tensor_functions.ones
+    ones = minitorch.tensor_functions.ones(y.shape, backend=BACKEND)
+    eps = 1e-9
+    lg_out = out + eps
+    lg_out = lg_out.log()
+    lg_1_minus_out = ones - out +eps
+    lg_1_minus_out = lg_1_minus_out.log()
+    bce = -(y * lg_out + (ones - y) * lg_1_minus_out)
+    return bce.mean()
+
     
-    raise NotImplementedError("cross_entropy_loss not implemented")
+
+
+    
+
     
     # END ASSIGN2_3
 
@@ -128,12 +140,13 @@ class Network(minitorch.Module):
         # 5. Apply sigmoid and reshape to (batch)
         # HINT: You can use minitorch.nn.dropout for dropout, and minitorch.tensor.relu for ReLU
         x = embeddings.mean(dim=1)
-        x = x.view(batch, self.embedding_dim)
+        x = x.contiguous().view(batch, self.embedding_dim)
         x = self.l1(x)
         x = x.relu()
         x = minitorch.nn.dropout(x, self.dropout_prob)
         x = self.l2(x)
-        x = x.view(batch)
+        x = x.contiguous().view(batch)
+        x = x.sigmoid()
         return x
         # END ASSIGN2_2
 
@@ -142,7 +155,7 @@ class Network(minitorch.Module):
 def get_predictions_array(y_true, model_output):
     predictions_array = []
     model_output = model_output.view(model_output.shape[0])
-    
+
     for j in range(model_output.shape[0]):
         true_label = y_true[j]
         logit = model_output[j]
@@ -225,11 +238,17 @@ class SentenceSentimentTrain:
                 # 3. Calculate the loss using binary_cross_entropy_loss function
                 # 4. Call backward function of the loss
                 # 5. Use Optimizer to take a gradient step
+                x = X_train[example_num:example_num+batch_size]
+                y = y_train[example_num:example_num+batch_size]
+                x = minitorch.tensor(x, backend=BACKEND)
+                y = minitorch.tensor(y, backend=BACKEND)
                 
-                raise NotImplementedError("SentenceSentimentTrain train not implemented")
-
+                out = model.forward(x)
+               
+                loss = binary_cross_entropy_loss(out, y)
+                loss.backward()
+                optim.step()
                 # END ASSIGN2_3
-                
                 
                 # Save training results
                 train_predictions += get_predictions_array(y, out)
@@ -241,16 +260,21 @@ class SentenceSentimentTrain:
             if data_val is not None:
                 (X_val, y_val) = data_val
                 model.eval()
-                
+            
                 # BEGIN ASSIGN2_3
                 # TODO
                 # 1. Create x and y using minitorch.tensor function
                 # 2. Get the output of the model
                 # 3. Obtain validation predictions using the get_predictions_array function, and add to the validation_predictions list
                 # 4. Obtain the validation accuracy using the get_accuracy function, and add to the validation_accuracy list
+                xv = minitorch.tensor(X_val, backend=BACKEND)
+                yv = minitorch.tensor(y_val, backend=BACKEND)
+
+                outv = model.forward(xv)
                 
-                raise NotImplementedError("SentenceSentimentTrain train not implemented")
-                
+                validation_predictions += get_predictions_array(yv, outv)
+                val_acc = get_accuracy(validation_predictions)
+                validation_accuracy.append(val_acc)
                 # END ASSIGN2_3
                 
                 model.train()
@@ -325,6 +349,7 @@ if __name__ == "__main__":
     train_size = 450
     validation_size = 100
     learning_rate = 0.025
+
     max_epochs = 250
     embedding_dim = 50
 
