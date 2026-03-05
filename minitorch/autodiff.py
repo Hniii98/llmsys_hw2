@@ -151,7 +151,7 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
     out_grad = {node.unique_id : 0.0 for node in sorted_nodes}
 
     # set output node to deriv
-    out_grad[variable] = deriv
+    out_grad[variable.unique_id] = deriv
 
     for node in sorted_nodes:
 
@@ -161,7 +161,8 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
             node.accumulate_derivative(out_grad[node.unique_id])
         else:
             for parent, parent_grad in node.chain_rule(cur_grad):
-                out_grad[parent.unique_id] += parent_grad
+                if not parent.is_constant():
+                    out_grad[parent.unique_id] += parent_grad
 
             
         
