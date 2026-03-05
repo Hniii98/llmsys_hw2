@@ -146,23 +146,22 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
     # BEGIN ASSIGN2_1
 
     # TODO
-    def add_outgrad(prev_g, g):
-        if prev_g is None:
-            return g
-        return prev_g + g
-    
-    outgrad = {variable.unique_id : deriv}
+    # make sure all node get initial value 0.0
+    sorted_nodes = topological_sort(variable)
+    out_grad = {node.unique_id : 0.0 for node in sorted_nodes}
 
-    for node in topological_sort(variable):
+    # set output node to deriv
+    out_grad[variable] = deriv
 
-        cur_grad = outgrad[node.unique_id]
+    for node in sorted_nodes:
+
+        cur_grad = out_grad[node.unique_id]
         
         if node.is_leaf():
-            node.accumulate_derivative(outgrad.get(node.unique_id))
+            node.accumulate_derivative(out_grad[node.unique_id])
         else:
             for parent, parent_grad in node.chain_rule(cur_grad):
-                outgrad[parent.unique_id] = add_outgrad(outgrad.get(parent.unique_id), parent_grad)
-
+                out_grad[parent.unique_id] += parent_grad
 
             
         
